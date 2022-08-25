@@ -1,2 +1,3 @@
 # Junction-model
-This project simulates a 4 way junction in python.
+AgentPy simulation of a 4 road junction for Multi-Agents and Computer Graphics course 
+Course code: TC2008B
