@@ -1,3 +1,3 @@
 # Junction-model
-AgentPy simulation of a 4 road junction for Multi-Agents and Computer Graphics course 
+AgentPy simulation of a 4 road junction for Multi-Agents and Computer Graphics course \n
 Course code: TC2008B
