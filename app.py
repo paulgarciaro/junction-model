@@ -9,8 +9,8 @@ app = Flask(__name__)
 model = None
 
 # Define simulation parameters
-@app.route("/param", methods=['POST'])
-def param():
+@app.route("/setup", methods=['POST'])
+def setup():
     cars = (request.values.get('cars'))
     width = (request.values.get('width'))
     height = (request.values.get('height'))
@@ -26,26 +26,30 @@ def param():
         return err, 400
 
     parameters = {
-    'cars': int(request.values.get('cars')),
-    'width': int(request.values.get('width')),
-    'height': int(request.values.get('height')),
+    'cars': int(cars),
+    'width': int(width),
+    'height': int(height),
     }
 
     global model
-    model = junctionModel(parameters)
+    model = junctionModel(parameters=parameters)
     model.setup()
     
-    return "Success", 200
-
-@app.route("/get_step", methods = ['GET'])
-def get_step():
-    if model == None:
-        return "Model has not yet been instantiated\n", 400
-
     positions = dict()
     for agent in model['agents'].select(model['agents'].status < 20):
         positions[agent['id']] = model['ground'].positions[agent]
 
+    return positions, 200
+
+@app.route("/step", methods = ['GET'])
+def get_step():
+    if model == None:
+        return "Model has not yet been instantiated\n", 400
+
     model.step()
+
+    positions = dict()
+    for agent in model['agents'].select(model['agents'].status < 20):
+        positions[agent['id']] = model['ground'].positions[agent]
 
     return positions, 200
