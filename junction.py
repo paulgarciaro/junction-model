@@ -103,14 +103,6 @@ class junctionModel(ap.Model):
         # Coordinates of center cell
         center = (int(self.p.height / 2), int(self.p.width / 2))
         
-        moving_cars = self.agents.select(self.agents.status < 20)
-        #          y   x
-        north = ( -1,  0 )
-        west  = (  0, -1 )
-        south = (  1,  0 )
-        east  = (  0,  1 )
-        moves = [north, west, south, east]
-
         entry_positions = [
             (center[0] + 1, center[1]), # north-bound
             (center[0], center[1] + 1), # west-bound
@@ -130,6 +122,45 @@ class junctionModel(ap.Model):
             (center[0] + 1, center[1] - 1), # south-bound
         ]
 
+        #          y   x
+        north = ( -1,  0 )
+        west  = (  0, -1 )
+        south = (  1,  0 )
+        east  = (  0,  1 )
+        moves = [north, west, south, east]
+
+        # moving_cars = self.agents.select(self.agents.status < 20)
+        moving_cars = list()
+        # update cars in order:
+        # 1. those about to enter
+        # 2. those inside the roundabout
+        for coord in pre_entry_positions + entry_positions + exit_positions:
+            moving_cars.extend(list(self.ground.agents[coord]))
+        # 3. those in the queue to enter (outwards)
+        for i in range(1, center[0] - 1):
+            for idx, (y, x) in enumerate(moves):
+                moving_cars.extend(list(self.ground.agents[(
+                    pre_entry_positions[(idx - 2) % 4][0] + y * i,
+                    pre_entry_positions[(idx - 2) % 4][1] + x * i
+                )]))
+        # 4. exiting
+        moving_cars.extend(list(self.ground.agents[
+            center[0] + 2 : self.p.height - 1,
+            center[1] - 1
+        ]))
+        moving_cars.extend(list(self.ground.agents[
+            center[0] + 1,
+            center[1] + 2 : self.p.width - 1
+        ]))
+        moving_cars.extend(list(self.ground.agents[
+            0 : center[0] - 1,
+            center[1] + 1
+        ]))
+        moving_cars.extend(list(self.ground.agents[
+            center[0] - 1,
+            0 : center[1] - 1
+        ]))
+
         for car in moving_cars:
             if car.status % 5 == 0: # before entering
                 car_origin = int(car.status / 5)
@@ -138,6 +169,7 @@ class junctionModel(ap.Model):
                     car.status += 1
                 elif self.ground.positions[car] == pre_entry_positions[car_origin] and len(self.ground.agents[exit_positions[(car_origin - 1) % 4]]) > 0:
                     # wait to enter roundabout
+                    # if there are cars in the roundabout
                     continue
                 elif (self.ground.positions[car][0] > pre_entry_positions[0][0] \
                     or self.ground.positions[car][0] < pre_entry_positions[2][0] \
@@ -147,6 +179,7 @@ class junctionModel(ap.Model):
                         self.ground.positions[car][0] + moves[car_origin][0],
                         self.ground.positions[car][1] + moves[car_origin][1],
                     ]) > 0:
+                    # if there are cars in front
                     continue
                 else:
                     # continue straight
@@ -178,12 +211,3 @@ class junctionModel(ap.Model):
             if car.status % 5 == 4: # skipped third exit
                 car_origin = int(car.status / 5)
                 self.ground.move_by(car, moves[(car_origin + 2) % 4])
-
-parameters = {
-# Simulation steps
-'cars': 12,
-'width': 9,
-'height': 9,
-}
-
-model = junctionModel(parameters)
